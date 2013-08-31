@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang = "en" >
+  
+  <head>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <script type="text/javascript" src="d3/d3.v3.js"></script>
+    <script type="text/javascript" src="d3.parcoords.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Share market visualization using parallel co-ordinate method" >
+    <meta name="keywords" content= "D3,parallel,coordinates,visualization,stock,share,market">
+    <meta name="author" content="SRIG">
+    <title>Parallel Co-ordinates</title>
+    
+  </head>
+
+  <body background="para.jpg">  
+    <div class="review">
+      <h3>About</h3>
+      <p>Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.
+      To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and equally spaced. A point in n-dimensional space is represented as a polyline with vertices on the parallel axes; the position of the vertex on the ith axis corresponds to the ith coordinate of the point. In this visualization we have multivariate share market random dataset. Table is dynamically generated according to the dataset. To view all the variables of a particular data item hover the mouse on the table. Green color of the line indicates that change % is positive and Red line indicates that change % is negative whereas blue line means change % is 0(In context of share market). Update button generates new random dataset and plot them.</p>
+    </div>
+    <script type="text/javascript">
+     
+        var multiply = [1500,18,400000,4000,10,3000];
+        var add = [200,-10,50000,200,1,500]
+        var dataset = [];
+        for(var j=0;j<120;j++)
+        {
+          dataset.push([]);
+        }
+        for(var j=0;j<120;j++)
+        {
+          for(var i=0;i<6;i++)
+          {
+            var num= Math.random();
+            if( i===1)
+            {
+              var res= Math.round((num * multiply[i] ) + add[i]) ;
+            }
+            else
+            {
+            var res= Math.round((num * multiply[i] ) + add[i]);
+            }
+            dataset[j].push(res);
+          }
+        }
+        var scale = [];
+        var min = [];
+        var max = [];
+        var axis = [];
+        var padding=40;
+        var pc1;
+        var label= ["Price (Rs.)","Change (%)","Volume", "Equity(Rs)","Face Val(Rs)","Book Val(Rs)","Mrkt Cap(Cr)"];
+        for(var i=0;i<dataset[0].length;i++)
+          {
+            var value = d3.scale.linear();
+            scale.push(value);
+          }
+
+        for(var i=0;i<scale.length;i++) 
+          {
+            var value = d3.min(dataset, function(d) {
+              return d[i];
+
+            });
+            min.push(value);
+
+          }   
+
+        for(var i=0;i<scale.length;i++)
+          {
+            var value = d3.max(dataset, function(d) {
+              return d[i];
+            });
+            max.push(value);  
+          }
+
+        for ( var i=0;i<scale.length;i++)
+          {
+              scale[i].domain([max[i],min[i]]);
+              scale[i].range([0,400]);
+          } 
+
+        for(var i=0;i<scale.length;i++)
+          {
+              var value = d3.svg.axis();
+              axis.push(value);
+        } 
+
+      for(var i=0;i<scale.length;i++)
+        {
+          axis[i].scale(scale[i]);
+          axis[i].orient("left");
+        }
+
+      var svg = d3.select("body").append("svg");
+        svg.attr("height","500");
+        svg.attr("width","1200");
+
+      for(var i=0;i<scale.length;i++)
+      {
+        svg.append("g")
+           .attr("class","axis")
+           .attr("transform", "translate(" + (padding*4*i+250) + ",30)")
+           .call(axis[i]) ;
+      }
+
+
+      for(var j=0;j<dataset.length;j++)
+      {
+      for(var i=0;i<(scale.length-1);i++)
+        {
+          var x1= padding*4*i+250;
+          var y1= scale[i](dataset[j][i]);
+          var x2= padding*4*(i+1)+250;
+          var y2= scale[i+1](dataset[j][i+1]);
+          svg.append("line")
+          
+          .attr("x1",x1)
+          .attr("y1",y1+30)
+          .attr("x2",x2)
+          .attr("y2",y2+30)
+          .attr("stroke","steelblue")
+          .transition()
+            .duration(2000)
+            .delay(100)
+          .attr("opacity",0.7);
+        }
+      }
+
+      for(var i=0;i<scale.length;i++)
+      {
+        svg.append("text").attr("text-anchor","middle")
+          .attr("x",padding*4*i+250)
+          .attr("y",15)
+          .attr("fill","black")
+          .attr("font-weight","bold")
+          .attr("font-size","12px")
+          .transition()
+          .duration(1000)
+          .delay(450)
+          .text(label[i]);
+      }
+
+  
+      var k=0;
+
+      var tbody = d3.select("body")
+                    .append("div")
+                    .style("overflow-y","scroll")
+                    .style("max-height","100px")
+                    .style("width","1000px")
+                    .append("table")
+                    .style("border-collapse", "collapse")
+                    .style("border", "2px black solid")
+                    .append("tbody")
+                    .style("background-color","#cccccc")
+                    .style("color","#000000")
+                    .style("margin","0px");
+      tbody.append("th")
+           .text("Price")
+
+      tbody.append("th")
+           .text("Change(%)");
+      tbody.append("th")
+           .text("Volume");
+      tbody.append("th")
+           .text("Equity");
+      tbody.append("th")
+           .text("Face Value");
+      tbody.append("th")
+           .text("Book Value");
+      tbody.selectAll("tr")
+           .data(dataset)
+           .enter().append("tr")
+           .attr("class",function(){
+                return k++;
+            })
+           .on("mouseover",function(){ 
+              var j=0;
+              var l = Number(this.className);
+              svg.selectAll("line")
+                 .transition()
+                 .duration(500)
+                 .attr("opacity",0.15);
+      for(var i=0;i<(scale.length-1);i++)
+      {
+        var x1= padding*4*i+250;
+        var y1= scale[i](dataset[l][i]) ;
+        var x2= padding*4*(i+1)+250;
+        var y2= scale[i+1](dataset[l][i+1]);
+        var line = svg.append("line")
+          .attr("x1",x1)
+          .attr("y1",y1+30)
+          .attr("x2",x2)
+          .attr("y2",y2+30)
+          .attr("stroke-width","2px")
+          .attr("class","newline")
+          .attr("opacity",0.8);
+          if(dataset[l][1]>0)
+          line.attr("stroke","rgb(0,190,0)");
+          else if(dataset[l][1]<0)
+          line.attr("stroke","rgb(190,0,0)") ;
+          else
+          line.attr("stroke","rgb(0,0,190)") ;
+              
+      }
+      for(var i=0;i<(scale.length);i++)
+      {
+        var x= padding*4*i+250;
+        var y= scale[i](dataset[l][i]) ;
+        var rect = svg.append("rect")
+                      .attr("class","pop")        
+                      .attr("x",x)
+                      .attr("y",y+20)
+                      .transition()
+                      .duration(400)
+                      .attr("width",80)
+                      .attr("height",25)
+                      .attr("fill-opacity",0.35);
+        if (dataset[l][1]>0)
+          rect.attr("fill","rgb(0,220,0)");
+        else if (dataset[l][1]<0)
+          rect.attr("fill","rgb(220,0,0)");
+        else
+          rect.attr("fill","steelblue");   
+        svg.append("text")
+              .attr("class","Text")
+              .attr("fill-opacity",0.85)
+               .attr("x",x + 10)
+              .attr("y",y + 38)
+              .transition()
+              .delay(320)
+              // .duration(400)
+              .attr("fill","black")
+              .attr("font-weight","bold")
+              .attr("font-size","14px")
+              .text(dataset[l][i]);
+            }
+        svg.select(this)
+           .attr("background-color","black")
+           .attr("opacity","0.5");
+      })
+
+        .on("mouseout", function(){
+          svg.selectAll("line")
+            .transition()
+            .duration(800)
+          .attr("opacity",0.7);
+          for(var i=0;i<(scale.length-1);i++)
+            {
+            svg.selectAll(".newline")
+           .transition()
+           .duration(900)
+           .attr("opacity",0.0)
+           .remove();
+            }
+            d3.selectAll(".pop")
+                .transition()
+                .duration(2200)
+                .attr("fill", "none")
+                 .remove();
+            d3.selectAll(".Text")
+                .attr("fill", "none")
+                .remove();
+          })
+        
+          .selectAll("td")
+          .data(function(d){return d;})
+          .enter().append("td")
+          .style("border", "1px black solid")
+          .text(function(d){return d;});
+          
+          function buttonclick() {
+            var dataset = [];
+            svg.selectAll("line")
+              .remove();
+              
+              for(var j=0;j<120;j++)
+              {
+                dataset.push([]);
+              }
+          for(var j=0;j<120;j++)
+        {
+          for(var i=0;i<6;i++)
+          {
+            var num= Math.random();
+            if( i===1)
+            {
+              var res= Math.round((num * multiply[i] ) + add[i]) ;
+            }
+            else
+            {
+            var res= Math.round((num * multiply[i] ) + add[i]);
+            }
+            dataset[j].push(res);
+            }
+           }
+      for(var j=0;j<dataset.length;j++)
+      {
+        for(var i=0;i<(scale.length-1);i++)
+        {
+          var x1= padding*4*i+250;
+          var y1= scale[i](dataset[j][i]);
+          var x2= padding*4*(i+1)+250;
+          var y2= scale[i+1](dataset[j][i+1]);
+          svg.append("line")
+          .attr("x1",x1)
+          .attr("y1",y1+30)
+          .attr("x2",x2)
+          .attr("y2",y2+30)
+          .attr("stroke","steelblue")
+          .transition()
+            .duration(800)
+          .attr("opacity",0.7);
+          //.attr("class","lin")
+        }
+      }
+
+  }
+    </script>
+    
+    <form>
+    <input type="button" name="Update" value="Update" onclick="buttonclick();">
+   </form>
+   <div id="button">
+      <a href="index.html">Return to <br><span>Home</span></a>
+    </div>
+  </body>
+</html>
